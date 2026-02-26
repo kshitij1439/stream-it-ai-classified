@@ -13,10 +13,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stream-io/video-react-sdk": "^1.0.0",
+    "lucide-react": "^0.300.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@stream-io/video-react-sdk": "^1.0.0",
-    "lucide-react": "^0.300.0"
+    "stream-chat": "^9.35.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

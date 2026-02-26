@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from vision_agents.core import Agent, AgentLauncher, User, Runner
 from vision_agents.plugins import getstream, gemini, ultralytics
 
-load_dotenv() # Automatically loads your keys from .env
+load_dotenv()
 
 
 async def create_agent(**kwargs) -> Agent:

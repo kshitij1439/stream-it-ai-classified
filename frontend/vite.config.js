@@ -6,9 +6,10 @@ export default defineConfig({
     server: {
         port: 5173,
         proxy: {
-            "/join": "http://localhost:8001", 
-            "/health": "http://localhost:8001", 
-            "/sessions": "http://localhost:8000", 
+            "/join": "http://localhost:8001",
+            "/modes": "http://localhost:8001",
+            "/health": "http://localhost:8001",
+            "/sessions": "http://localhost:8000",
         },
     },
 });

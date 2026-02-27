@@ -1,17 +1,29 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, HelpCircle, GripHorizontal } from 'lucide-react';
 
-const QUESTIONS = [
-    "Tell me about a time you faced a difficult technical challenge and how you overcame it.",
-    "Explain the difference between React's useMemo and useCallback hooks.",
-    "Where do you see your engineering career in 5 years?",
-    "Describe a time you disagreed with a coworker. How did you handle it?",
-    "Walk me through how you'd design a scalable REST API.",
-    "What's your approach to debugging a production issue under pressure?",
-];
+const MODE_QUESTIONS = {
+    interview: [
+        "Tell me about a time you faced a difficult technical challenge and how you overcame it.",
+        "Explain the difference between React's useMemo and useCallback hooks.",
+        "Where do you see your engineering career in 5 years?",
+        "Describe a time you disagreed with a coworker. How did you handle it?",
+        "Walk me through how you'd design a scalable REST API.",
+        "What's your approach to debugging a production issue under pressure?",
+    ],
+    speaking: [
+        "Introduce yourself and your background in 60 seconds.",
+        "Pitch your latest project or idea to a room of investors.",
+        "Explain a complex technical concept to a non-technical audience.",
+        "Deliver a 2-minute motivational speech about overcoming failure.",
+    ],
+    gym: [] // No questions for gym mode
+};
 
-export default function QuestionCard() {
+export default function QuestionCard({ jobRole }) {
+    const QUESTIONS = MODE_QUESTIONS[jobRole] || MODE_QUESTIONS.interview;
+
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [isOpen, setIsOpen] = useState(true);
     const [pos, setPos] = useState({ x: 0, y: 0 }); // offset from initial center
     const [dragging, setDragging] = useState(false);
     const dragStart = useRef(null); // { mouseX, mouseY, posX, posY }
@@ -20,7 +32,7 @@ export default function QuestionCard() {
     const prev = () => setCurrentIndex(i => Math.max(0, i - 1));
     const next = () => setCurrentIndex(i => Math.min(QUESTIONS.length - 1, i + 1));
 
-    // ── Drag handlers ──────────────────────────────────────────────────────────
+    // ── Drag handlers 
     const onMouseDown = useCallback((e) => {
         // Only drag from the handle bar, not from buttons
         if (e.target.closest('button')) return;
@@ -48,7 +60,7 @@ export default function QuestionCard() {
         };
     }, [dragging]);
 
-    // ── Touch support ──────────────────────────────────────────────────────────
+    // ── Touch support 
     const onTouchStart = useCallback((e) => {
         if (e.target.closest('button')) return;
         const t = e.touches[0];
@@ -76,6 +88,10 @@ export default function QuestionCard() {
     }, [dragging]);
 
     const progress = ((currentIndex + 1) / QUESTIONS.length) * 100;
+
+    if (!QUESTIONS || QUESTIONS.length === 0) {
+        return null;
+    }
 
     return (
         <div
@@ -114,7 +130,7 @@ export default function QuestionCard() {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '10px 16px 8px',
-                        borderBottom: '1px solid rgba(255,255,255,0.06)',
+                        borderBottom: isOpen ? '1px solid rgba(255,255,255,0.06)' : 'none',
                         cursor: dragging ? 'grabbing' : 'grab',
                         background: 'rgba(255,255,255,0.02)',
                     }}
@@ -122,104 +138,121 @@ export default function QuestionCard() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--accent)' }}>
                         <HelpCircle size={14} />
                         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            Current Question
+                            {isOpen ? "Current Question" : "Questions"}
                         </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 11 }}>
-                        <span>{currentIndex + 1} / {QUESTIONS.length}</span>
-                        <GripHorizontal size={14} style={{ opacity: 0.5 }} />
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        {isOpen && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 11 }}>
+                                <span>{currentIndex + 1} / {QUESTIONS.length}</span>
+                                <GripHorizontal size={14} style={{ opacity: 0.5 }} />
+                            </div>
+                        )}
+                        <button
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onClick={() => setIsOpen(!isOpen)}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: 0, cursor: 'pointer', display: 'flex' }}
+                        >
+                            {isOpen ? "Hide" : "Show"}
+                        </button>
                     </div>
                 </div>
 
-                {/* ── Progress bar ───────────────────────────────────────────── */}
-                <div style={{ height: 2, background: 'rgba(255,255,255,0.06)' }}>
-                    <div style={{
-                        height: '100%',
-                        width: `${progress}%`,
-                        background: 'var(--accent)',
-                        transition: 'width 0.3s ease',
-                    }} />
-                </div>
+                {isOpen && (
+                    <>
+                        {/* ── Progress bar ───────────────────────────────────────────── */}
+                        <div style={{ height: 2, background: 'rgba(255,255,255,0.06)' }}>
+                            <div style={{
+                                height: '100%',
+                                width: `${progress}%`,
+                                background: 'var(--accent)',
+                                transition: 'width 0.3s ease',
+                            }} />
+                        </div>
 
-                {/* ── Question text ──────────────────────────────────────────── */}
-                <div style={{ padding: '16px 20px 12px' }}>
-                    <div style={{
-                        fontSize: 17,
-                        lineHeight: 1.55,
-                        minHeight: 56,
-                        color: 'var(--text-main)',
-                        transition: 'opacity 0.15s ease',
-                    }}>
-                        {QUESTIONS[currentIndex]}
-                    </div>
-                </div>
+                        {/* ── Question text ──────────────────────────────────────────── */}
+                        <div style={{ padding: '16px 20px 12px' }}>
+                            <div style={{
+                                fontSize: 17,
+                                lineHeight: 1.55,
+                                minHeight: 56,
+                                color: 'var(--text-main)',
+                                transition: 'opacity 0.15s ease',
+                            }}>
+                                {QUESTIONS[currentIndex]}
+                            </div>
+                        </div>
 
-                {/* ── Navigation ─────────────────────────────────────────────── */}
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '0 20px 16px',
-                    gap: 8,
-                }}>
-                    <button
-                        onClick={prev}
-                        disabled={currentIndex === 0}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '7px 14px',
-                            background: 'rgba(255,255,255,0.07)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: 6,
-                            color: currentIndex === 0 ? 'var(--text-muted)' : 'var(--text-main)',
-                            fontSize: 13,
-                            opacity: currentIndex === 0 ? 0.4 : 1,
-                            transition: 'opacity 0.2s, background 0.2s',
-                        }}
-                    >
-                        <ChevronLeft size={15} /> Prev
-                    </button>
-
-                    {/* dot indicators */}
-                    <div style={{ display: 'flex', gap: 5 }}>
-                        {QUESTIONS.map((_, i) => (
+                        {/* ── Navigation ─────────────────────────────────────────────── */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0 20px 16px',
+                            gap: 8,
+                        }}>
                             <button
-                                key={i}
-                                onClick={() => setCurrentIndex(i)}
+                                onClick={prev}
+                                disabled={currentIndex === 0}
                                 style={{
-                                    width: i === currentIndex ? 18 : 6,
-                                    height: 6,
-                                    borderRadius: 3,
-                                    background: i === currentIndex ? 'var(--accent)' : 'rgba(255,255,255,0.2)',
-                                    border: 'none',
-                                    padding: 0,
-                                    transition: 'width 0.25s ease, background 0.2s ease',
-                                    cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                    padding: '7px 14px',
+                                    background: 'rgba(255,255,255,0.07)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 6,
+                                    color: currentIndex === 0 ? 'var(--text-muted)' : 'var(--text-main)',
+                                    fontSize: 13,
+                                    opacity: currentIndex === 0 ? 0.4 : 1,
+                                    transition: 'opacity 0.2s, background 0.2s',
                                 }}
-                            />
-                        ))}
-                    </div>
+                            >
+                                <ChevronLeft size={15} /> Prev
+                            </button>
 
-                    <button
-                        onClick={next}
-                        disabled={currentIndex === QUESTIONS.length - 1}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '7px 14px',
-                            background: currentIndex === QUESTIONS.length - 1
-                                ? 'rgba(255,255,255,0.07)'
-                                : 'rgba(88,166,255,0.15)',
-                            border: `1px solid ${currentIndex === QUESTIONS.length - 1 ? 'rgba(255,255,255,0.1)' : 'rgba(88,166,255,0.3)'}`,
-                            borderRadius: 6,
-                            color: currentIndex === QUESTIONS.length - 1 ? 'var(--text-muted)' : 'var(--accent)',
-                            fontSize: 13,
-                            opacity: currentIndex === QUESTIONS.length - 1 ? 0.4 : 1,
-                            transition: 'opacity 0.2s, background 0.2s',
-                        }}
-                    >
-                        Next <ChevronRight size={15} />
-                    </button>
-                </div>
+                            {/* dot indicators */}
+                            <div style={{ display: 'flex', gap: 5 }}>
+                                {QUESTIONS.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setCurrentIndex(i)}
+                                        style={{
+                                            width: i === currentIndex ? 18 : 6,
+                                            height: 6,
+                                            borderRadius: 3,
+                                            background: i === currentIndex ? 'var(--accent)' : 'rgba(255,255,255,0.2)',
+                                            border: 'none',
+                                            padding: 0,
+                                            transition: 'width 0.25s ease, background 0.2s ease',
+                                            cursor: 'pointer',
+                                        }}
+                                    />
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={next}
+                                disabled={currentIndex === QUESTIONS.length - 1}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                    padding: '7px 14px',
+                                    background: currentIndex === QUESTIONS.length - 1
+                                        ? 'rgba(255,255,255,0.07)'
+                                        : 'rgba(88,166,255,0.15)',
+                                    border: `1px solid ${currentIndex === QUESTIONS.length - 1 ? 'rgba(255,255,255,0.1)' : 'rgba(88,166,255,0.3)'}`,
+                                    borderRadius: 6,
+                                    color: currentIndex === QUESTIONS.length - 1 ? 'var(--text-muted)' : 'var(--accent)',
+                                    fontSize: 13,
+                                    opacity: currentIndex === QUESTIONS.length - 1 ? 0.4 : 1,
+                                    transition: 'opacity 0.2s, background 0.2s',
+                                }}
+                            >
+                                Next <ChevronRight size={15} />
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

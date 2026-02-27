@@ -19,32 +19,68 @@ function extractStats(messages) {
         postureAlerts: 0,
         eyeContact: "—",
         pace: "—",
+        confidence: 100,
+        formAlerts: 0,
+        positiveForm: 0,
     };
-    messages.forEach((m) => {
-        const t = (m.message || "").toLowerCase();
-        const fillerMatch = t.match(
-            /filler(?:\s+word)?[s]?[:\s]+(\d+)|(\d+)\s+filler/
-        );
-        if (fillerMatch)
-            stats.fillerWords = parseInt(fillerMatch[1] || fillerMatch[2]);
-        if (
-            t.includes("slouch") ||
-            t.includes("posture") ||
-            t.includes("sit up")
-        )
-            stats.postureAlerts += 1;
-        if (t.includes("great eye contact") || t.includes("good eye contact"))
-            stats.eyeContact = "Great ✓";
-        else if (t.includes("eye contact")) stats.eyeContact = "Needs work";
-        if (t.includes("slow down") || t.includes("too fast"))
-            stats.pace = "Too fast";
-        else if (t.includes("good pace") || t.includes("great pace"))
-            stats.pace = "Good ✓";
-    });
+
+    // Combine all transcript chunks into one text so that phrases severed across events can be matched
+    const fullText = messages.map((m) => m.message || "").join(" ").toLowerCase();
+
+    // 1. Count fillers (explicit feedback like "Filler words: 2")
+    const fillerMatches = [...fullText.matchAll(/filler(?:\s+word)?[s]?[:\s-]+(\d+)|(\d+)\s+filler/g)];
+    stats.fillerWords = fillerMatches.reduce((sum, match) => sum + parseInt(match[1] || match[2] || "0", 10), 0);
+
+    // Fallback: if agent didn't list a number but just said "filler words detected", we can add roughly 1 for each mention
+    if (stats.fillerWords === 0) {
+        const genericMatch = fullText.match(/filler word/g);
+        if (genericMatch) stats.fillerWords = genericMatch.length;
+    }
+
+    // 2. Posture alerts
+    const postureMatches = fullText.match(/slouch|posture issue|sit up|plant|sway/g);
+    stats.postureAlerts = postureMatches ? postureMatches.length : 0;
+
+    // 3. Eye contact
+    if (fullText.includes("great eye contact") || fullText.includes("good eye contact") || fullText.includes("excellent eye contact")) {
+        stats.eyeContact = "Great ✓";
+    }
+    if (fullText.includes("needs eye contact") || fullText.includes("eye contact issue") || fullText.includes("look at the camera")) {
+        stats.eyeContact = "Needs work";
+    }
+
+    // 4. Pace
+    if (fullText.includes("good pace") || fullText.includes("great pace")) {
+        stats.pace = "Good ✓";
+    }
+    if (fullText.includes("too fast") || fullText.includes("slow down") || fullText.includes("speed issue")) {
+        stats.pace = "Too fast";
+    }
+
+    // 5. Gym Form
+    const formAlertsMatches = fullText.match(/go deeper|chest up|slow the descent|watch your back|form issue/g);
+    stats.formAlerts = formAlertsMatches ? formAlertsMatches.length : 0;
+
+    const positiveFormMatches = fullText.match(/great form|good form|excellent form/g);
+    stats.positiveForm = positiveFormMatches ? positiveFormMatches.length : 0;
+
+    let score = 100;
+    score -= (stats.fillerWords * 3);
+    score -= (stats.postureAlerts * 5);
+    score -= (stats.formAlerts * 5);
+
+    if (stats.eyeContact === "Needs work") score -= 10;
+    if (stats.eyeContact === "Great ✓") score += 5;
+    if (stats.pace === "Too fast") score -= 5;
+    if (stats.pace === "Good ✓") score += 5;
+    if (stats.positiveForm > 0) score += (stats.positiveForm * 5);
+
+    stats.confidence = Math.max(0, Math.min(100, Math.round(score)));
+
     return stats;
 }
 
-export default function SessionScreen({ sessionData, onLeave }) {
+export default function SessionScreen({ sessionData, jobRole, onLeave }) {
     const [videoClient, setVideoClient] = useState(null);
     const [call, setCall] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -70,7 +106,10 @@ export default function SessionScreen({ sessionData, onLeave }) {
         async function initCall() {
             try {
                 // Step 1: create client, then connectUser explicitly
-                const vClient = new StreamVideoClient({ apiKey: api_key });
+                const vClient = new StreamVideoClient({
+                    apiKey: api_key,
+                    options: { timeout: 15000 },
+                });
                 clientRef.current = vClient;
 
                 await vClient.connectUser(
@@ -146,6 +185,7 @@ export default function SessionScreen({ sessionData, onLeave }) {
                         body: JSON.stringify({
                             call_id: call_id || "interview_room_1",
                             call_type: "default",
+                            mode: jobRole || "interview",
                         }),
                     })
                         .then((r) => r.json())
@@ -187,6 +227,7 @@ export default function SessionScreen({ sessionData, onLeave }) {
 
         return () => {
             mounted = false;
+            console.warn("[SessionScreen] CLEANUP FIRED — leaving call");  // add this
             callRef.current?.leave().catch(console.error);
             clientRef.current?.disconnectUser().catch(console.error);
             clientRef.current = null;
@@ -220,7 +261,7 @@ export default function SessionScreen({ sessionData, onLeave }) {
 
     const handleLeave = () => {
         callRef.current?.leave().catch(console.error);
-        onLeave();
+        onLeave({ stats, messages });
     };
 
     if (error)
@@ -290,7 +331,7 @@ export default function SessionScreen({ sessionData, onLeave }) {
                     </StreamCall>
                 </StreamVideo>
                 <StatsBar stats={stats} />
-                <QuestionCard />
+                <QuestionCard jobRole={jobRole} />
             </div>
 
             <CoachingPanel messages={messages} />

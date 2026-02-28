@@ -11,7 +11,7 @@ export default function LobbyScreen({ onJoin }) {
     const [loading, setLoading] = useState(false); // set to false instantly so we never block
 
     useEffect(() => {
-        fetch('/modes')
+        fetch(`${import.meta.env.VITE_API_URL || ''}/modes`)
             .then(res => {
                 if (!res.ok) throw new Error("Network response was not ok");
                 return res.json();

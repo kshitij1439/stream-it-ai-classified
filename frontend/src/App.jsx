@@ -10,7 +10,8 @@ function App() {
 
     const handleJoin = async (selectedMode) => {
         try {
-            const response = await fetch('/join', {
+            const API = import.meta.env.VITE_API_URL || '';
+            const response = await fetch(`${API}/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mode: selectedMode })

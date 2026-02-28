@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
     StreamVideo,
     StreamVideoClient,
@@ -24,24 +24,19 @@ function extractStats(messages) {
         positiveForm: 0,
     };
 
-    // Combine all transcript chunks into one text so that phrases severed across events can be matched
     const fullText = messages.map((m) => m.message || "").join(" ").toLowerCase();
 
-    // 1. Count fillers (explicit feedback like "Filler words: 2")
     const fillerMatches = [...fullText.matchAll(/filler(?:\s+word)?[s]?[:\s-]+(\d+)|(\d+)\s+filler/g)];
     stats.fillerWords = fillerMatches.reduce((sum, match) => sum + parseInt(match[1] || match[2] || "0", 10), 0);
 
-    // Fallback: if agent didn't list a number but just said "filler words detected", we can add roughly 1 for each mention
     if (stats.fillerWords === 0) {
         const genericMatch = fullText.match(/filler word/g);
         if (genericMatch) stats.fillerWords = genericMatch.length;
     }
 
-    // 2. Posture alerts
     const postureMatches = fullText.match(/slouch|posture issue|sit up|plant|sway/g);
     stats.postureAlerts = postureMatches ? postureMatches.length : 0;
 
-    // 3. Eye contact
     if (fullText.includes("great eye contact") || fullText.includes("good eye contact") || fullText.includes("excellent eye contact")) {
         stats.eyeContact = "Great ✓";
     }
@@ -49,7 +44,6 @@ function extractStats(messages) {
         stats.eyeContact = "Needs work";
     }
 
-    // 4. Pace
     if (fullText.includes("good pace") || fullText.includes("great pace")) {
         stats.pace = "Good ✓";
     }
@@ -57,7 +51,6 @@ function extractStats(messages) {
         stats.pace = "Too fast";
     }
 
-    // 5. Gym Form
     const formAlertsMatches = fullText.match(/go deeper|chest up|slow the descent|watch your back|form issue/g);
     stats.formAlerts = formAlertsMatches ? formAlertsMatches.length : 0;
 
@@ -68,7 +61,6 @@ function extractStats(messages) {
     score -= (stats.fillerWords * 3);
     score -= (stats.postureAlerts * 5);
     score -= (stats.formAlerts * 5);
-
     if (stats.eyeContact === "Needs work") score -= 10;
     if (stats.eyeContact === "Great ✓") score += 5;
     if (stats.pace === "Too fast") score -= 5;
@@ -92,8 +84,41 @@ export default function SessionScreen({ sessionData, jobRole, onLeave }) {
     const clientRef = useRef(null);
     const agentStartedRef = useRef(false);
 
+    // ── FIX 1: Define handler with useCallback BEFORE useEffect ──────────────
+    // This ensures the function reference is stable and correct when subscribed.
+    const handleCustomEvent = useCallback((event) => {
+        console.log("[SessionScreen] Raw custom event:", JSON.stringify(event, null, 2));
+
+        // ── FIX 2: Stream sends custom events with this shape: ────────────────
+        // { type: "custom", custom: { type: "coaching_feedback", message: "..." } }
+        // The agent's send_custom_event payload lands in event.custom
+        const data = event?.custom ?? event?.data ?? event?.payload ?? event;
+
+        console.log("[SessionScreen] Parsed data:", data);
+
+        if (data?.type !== "coaching_feedback") {
+            console.log("[SessionScreen] Ignoring non-coaching event. data.type =", data?.type);
+            return;
+        }
+
+        const newMsg = {
+            id: Date.now(),
+            message: data.message || "",
+            feedback_type: data.feedback_type || "info",
+            timestamp: new Date(),
+        };
+
+        console.log("[SessionScreen] ✅ Adding coaching message:", newMsg);
+
+        setMessages((prev) => {
+            const updated = [...prev, newMsg];
+            setStats(extractStats(updated));
+            return updated;
+        });
+    }, []);
+
     useEffect(() => {
-        if (clientRef.current) return; // React StrictMode guard
+        if (clientRef.current) return;
 
         const { api_key, user_id, token, call_id } = sessionData;
         if (!api_key || !user_id || !token) {
@@ -105,53 +130,29 @@ export default function SessionScreen({ sessionData, jobRole, onLeave }) {
 
         async function initCall() {
             try {
-                // Step 1: create client, then connectUser explicitly
                 const vClient = new StreamVideoClient({
                     apiKey: api_key,
                     options: { timeout: 15000 },
                 });
                 clientRef.current = vClient;
 
-                await vClient.connectUser(
-                    { id: user_id, name: "Interviewee" },
-                    token
-                );
+                await vClient.connectUser({ id: user_id, name: "Interviewee" }, token);
                 console.log("[SessionScreen] connectUser OK");
                 if (!mounted) return;
 
-                // Step 2: create call
-                const myCall = vClient.call(
-                    "default",
-                    call_id || "interview_room_1"
-                );
+                const myCall = vClient.call("default", call_id || "interview_room_1");
                 callRef.current = myCall;
 
-                // Debug overlay
+                // Debug overlay — log all non-noisy events
                 myCall.on("all", (event) => {
-                    const type =
-                        event?.type ?? event?.constructor?.name ?? "unknown";
-                    if (
-                        ![
-                            "AudioLevel",
-                            "ConnectionQuality",
-                            "mic.",
-                            "camera.",
-                            "stats",
-                            "health",
-                        ].some((n) => type.includes(n))
-                    ) {
+                    const type = event?.type ?? event?.constructor?.name ?? "unknown";
+                    const noisy = ["AudioLevel", "ConnectionQuality", "mic.", "camera.", "stats", "health"];
+                    if (!noisy.some((n) => type.includes(n))) {
                         console.log("[Stream event]", type, event);
-                        setEventLog((prev) => [
-                            ...prev.slice(-20),
-                            { type, ts: Date.now() },
-                        ]);
+                        setEventLog((prev) => [...prev.slice(-20), { type, ts: Date.now() }]);
                     }
                 });
 
-                // Step 3: join the call.
-                // Stream SDK bug: applyDeviceConfig calls .find() on undefined device list.
-                // The error is non-fatal — the join actually succeeds — so we catch and
-                // verify the call state before deciding whether to rethrow.
                 try {
                     await myCall.join({ create: true });
                 } catch (joinErr) {
@@ -160,11 +161,7 @@ export default function SessionScreen({ sessionData, jobRole, onLeave }) {
                         stateVal === "joined" ||
                         myCall.state?.participants?.getValue?.()?.length > 0;
                     if (isJoined || String(joinErr).includes("find")) {
-                        console.warn(
-                            "[SessionScreen] join() threw but call is usable:",
-                            joinErr.message
-                        );
-                        // continue — call is joined
+                        console.warn("[SessionScreen] join() threw but call is usable:", joinErr.message);
                     } else {
                         throw joinErr;
                     }
@@ -173,13 +170,27 @@ export default function SessionScreen({ sessionData, jobRole, onLeave }) {
                 console.log("[SessionScreen] Joined call successfully");
                 if (!mounted) return;
 
+                // ── FIX 3: Subscribe AFTER join, using the stable handler ref ──
+                // Stream fires "custom" for call.sendCustomEvent() from the agent.
+                // We subscribe to all likely event names for safety.
+                const eventNames = ["custom", "call.custom", "call.custom_event"];
+                eventNames.forEach((name) => {
+                    try {
+                        myCall.on(name, handleCustomEvent);
+                        console.log(`[SessionScreen] ✅ Subscribed to: ${name}`);
+                    } catch (e) {
+                        console.warn(`[SessionScreen] Could not subscribe to '${name}':`, e);
+                    }
+                });
+
                 setVideoClient(vClient);
                 setCall(myCall);
 
-                // Step 4: launch agent (once only)
+                // Launch agent (once only)
                 if (!agentStartedRef.current) {
+                    const API = import.meta.env.VITE_API_URL || '';
                     agentStartedRef.current = true;
-                    fetch("/sessions", {
+                    fetch(`${API}/sessions`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -189,34 +200,9 @@ export default function SessionScreen({ sessionData, jobRole, onLeave }) {
                         }),
                     })
                         .then((r) => r.json())
-                        .then((d) =>
-                            console.log(
-                                "[SessionScreen] /sessions response:",
-                                d
-                            )
-                        )
-                        .catch((e) =>
-                            console.error("[SessionScreen] /sessions error:", e)
-                        );
+                        .then((d) => console.log("[SessionScreen] /sessions response:", d))
+                        .catch((e) => console.error("[SessionScreen] /sessions error:", e));
                 }
-
-                // Step 5: subscribe to coaching events
-                [
-                    "custom",
-                    "call.custom",
-                    "customEvent",
-                    "call.custom_event",
-                ].forEach((name) => {
-                    try {
-                        myCall.on(name, handleCustomEvent);
-                    } catch (e) {
-                        console.warn(
-                            "[SessionScreen] Could not subscribe to:",
-                            name,
-                            e
-                        );
-                    }
-                });
             } catch (err) {
                 console.error("[SessionScreen] initCall failed:", err);
                 if (mounted) setError(err.message || String(err));
@@ -227,37 +213,32 @@ export default function SessionScreen({ sessionData, jobRole, onLeave }) {
 
         return () => {
             mounted = false;
-            console.warn("[SessionScreen] CLEANUP FIRED — leaving call");  // add this
+            console.warn("[SessionScreen] CLEANUP — leaving call");
+            // ── FIX 4: Unsubscribe the handler on cleanup to prevent leaks ───
+            if (callRef.current) {
+                ["custom", "call.custom", "call.custom_event"].forEach((name) => {
+                    try { callRef.current.off(name, handleCustomEvent); } catch (_) { }
+                });
+            }
             callRef.current?.leave().catch(console.error);
             clientRef.current?.disconnectUser().catch(console.error);
             clientRef.current = null;
             agentStartedRef.current = false;
         };
-    }, [sessionData]);
+    }, [sessionData, handleCustomEvent]);
 
-    function handleCustomEvent(event) {
-        console.log(
-            "[SessionScreen] Raw custom event:",
-            JSON.stringify(event, null, 2)
-        );
-        const data = event?.custom ?? event?.data ?? event?.payload ?? event;
-        if (data?.type !== "coaching_feedback") {
-            console.log("[SessionScreen] Ignoring event type:", data?.type);
-            return;
-        }
-        const newMsg = {
-            id: Date.now(),
-            message: data.message || "",
-            feedback_type: data.feedback_type || "info",
-            timestamp: new Date(),
+    // ── Manual test helper (dev only) ────────────────────────────────────────
+    // Open browser console and run: window.__testCoaching("Filler words: 3. Posture issue. Great eye contact.")
+    useEffect(() => {
+        if (process.env.NODE_ENV !== "development") return;
+        window.__testCoaching = (message) => {
+            handleCustomEvent({
+                custom: { type: "coaching_feedback", message, feedback_type: "info" }
+            });
         };
-        console.log("[SessionScreen] Adding coaching message:", newMsg);
-        setMessages((prev) => {
-            const updated = [...prev, newMsg];
-            setStats(extractStats(updated));
-            return updated;
-        });
-    }
+        console.log("[SessionScreen] 🧪 Test helper ready: window.__testCoaching('your message here')");
+        return () => { delete window.__testCoaching; };
+    }, [handleCustomEvent]);
 
     const handleLeave = () => {
         callRef.current?.leave().catch(console.error);
@@ -266,65 +247,28 @@ export default function SessionScreen({ sessionData, jobRole, onLeave }) {
 
     if (error)
         return (
-            <div
-                style={{
-                    display: "flex",
-                    height: "100vh",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexDirection: "column",
-                    gap: 16,
-                }}
-            >
-                <p style={{ color: "red", maxWidth: 400, textAlign: "center" }}>
-                    Connection error: {error}
-                </p>
+            <div style={{ display: "flex", height: "100vh", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+                <p style={{ color: "red", maxWidth: 400, textAlign: "center" }}>Connection error: {error}</p>
                 <button onClick={onLeave}>Go Back</button>
             </div>
         );
 
     if (!videoClient || !call)
         return (
-            <div
-                style={{
-                    display: "flex",
-                    height: "100vh",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexDirection: "column",
-                    gap: 20,
-                }}
-            >
-                <Loader2
-                    className="animate-spin"
-                    size={48}
-                    color="var(--accent)"
-                />
-                <p style={{ color: "var(--text-muted)" }}>
-                    Connecting to coaching session...
-                </p>
+            <div style={{ display: "flex", height: "100vh", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20 }}>
+                <Loader2 className="animate-spin" size={48} color="var(--accent)" />
+                <p style={{ color: "var(--text-muted)" }}>Connecting to coaching session...</p>
             </div>
         );
 
     return (
-        <div
-            className="main-content"
-            style={{ flexDirection: "row", height: "100%" }}
-        >
+        <div className="main-content" style={{ flexDirection: "row", height: "100%" }}>
             <div className="video-container" style={{ position: "relative" }}>
                 <StreamVideo client={videoClient}>
                     <StreamCall call={call}>
                         <StreamTheme style={{ width: "100%", height: "100%" }}>
                             <SpeakerLayout participantsBarPosition="bottom" />
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    bottom: 20,
-                                    left: "50%",
-                                    transform: "translateX(-50%)",
-                                    zIndex: 100,
-                                }}
-                            >
+                            <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
                                 <CallControls onLeave={handleLeave} />
                             </div>
                         </StreamTheme>
@@ -337,37 +281,17 @@ export default function SessionScreen({ sessionData, jobRole, onLeave }) {
             <CoachingPanel messages={messages} />
 
             {process.env.NODE_ENV === "development" && (
-                <div
-                    style={{
-                        position: "fixed",
-                        bottom: 8,
-                        right: 8,
-                        background: "rgba(0,0,0,0.85)",
-                        color: "#00ff88",
-                        fontSize: 10,
-                        padding: 8,
-                        borderRadius: 6,
-                        maxWidth: 280,
-                        maxHeight: 180,
-                        overflow: "auto",
-                        zIndex: 9999,
-                        fontFamily: "monospace",
-                        lineHeight: 1.4,
-                    }}
-                >
+                <div style={{
+                    position: "fixed", bottom: 8, right: 8,
+                    background: "rgba(0,0,0,0.85)", color: "#00ff88",
+                    fontSize: 10, padding: 8, borderRadius: 6,
+                    maxWidth: 280, maxHeight: 180, overflow: "auto",
+                    zIndex: 9999, fontFamily: "monospace", lineHeight: 1.4,
+                }}>
                     <strong style={{ color: "#fff" }}>Stream events:</strong>
-                    {eventLog.length === 0 && (
-                        <div style={{ color: "#888" }}>none yet...</div>
-                    )}
+                    {eventLog.length === 0 && <div style={{ color: "#888" }}>none yet...</div>}
                     {eventLog.map((e, i) => (
-                        <div
-                            key={i}
-                            style={{
-                                color: e.type.includes("custom")
-                                    ? "#ffff00"
-                                    : "#00ff88",
-                            }}
-                        >
+                        <div key={i} style={{ color: e.type.includes("custom") ? "#ffff00" : "#00ff88" }}>
                             {e.type}
                         </div>
                     ))}

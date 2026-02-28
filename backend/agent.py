@@ -4,8 +4,15 @@ import asyncio
 import traceback
 
 from vision_agents.core import Agent, AgentLauncher, User, Runner
-from vision_agents.core.agents.agents import RealtimeAgentSpeechTranscriptionEvent
 from vision_agents.plugins import getstream, gemini, ultralytics
+
+# Try to import the event class — but don't crash if the name is wrong
+try:
+    from vision_agents.core.agents.agents import RealtimeAgentSpeechTranscriptionEvent
+    log_imported = True
+except ImportError:
+    RealtimeAgentSpeechTranscriptionEvent = None
+    log_imported = False
 
 # ── Logging setup ──────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -14,7 +21,6 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-# Suppress noisy debug spam from these libraries
 for noisy in [
     "aiortc", "aioice", "aiortc.rtcrtpsender",
     "aiortc.rtcrtpreceiver", "aiortc.rtcdtlstransport",
@@ -24,7 +30,6 @@ for noisy in [
 ]:
     logging.getLogger(noisy).setLevel(logging.WARNING)
 
-# Keep these at INFO so we see important events
 for important in [
     "getstream", "vision_agents", "__main__",
     "getstream.video.rtc.coordinator.ws",
@@ -36,6 +41,9 @@ for important in [
 log = logging.getLogger(__name__)
 
 load_dotenv()
+
+if not log_imported:
+    log.warning("⚠️  Could not import RealtimeAgentSpeechTranscriptionEvent — will use catch-all handler")
 
 # ── Mode configs ───────────────────────────────────────────────────────────────
 MODES = {
@@ -76,6 +84,25 @@ MODES = {
     }
 }
 
+# ── Helper: extract text from any event object ─────────────────────────────────
+def extract_text_from_event(event) -> str | None:
+    """Try every known attribute name that might carry speech text."""
+    for attr in ("text", "transcript", "content", "message", "data", "output", "response", "speech"):
+        val = getattr(event, attr, None)
+        if isinstance(val, str) and len(val.strip()) > 3:
+            return val.strip()
+        # Sometimes it's nested: event.data.text
+        if hasattr(val, "text") and isinstance(val.text, str) and len(val.text.strip()) > 3:
+            return val.text.strip()
+    return None
+
+
+# ── Helper: is this event likely an agent speech event? ───────────────────────
+def is_speech_event(event) -> bool:
+    name = type(event).__name__.lower()
+    keywords = ("speech", "transcript", "utterance", "response", "output", "agent")
+    return any(k in name for k in keywords)
+
 
 # ── Agent factory ──────────────────────────────────────────────────────────────
 async def create_agent(**kwargs) -> Agent:
@@ -104,7 +131,7 @@ async def create_agent(**kwargs) -> Agent:
 async def join_call(agent: Agent, call_type: str, call_id: str, **kwargs) -> None:
     mode_name = kwargs.get("mode", "interview")
     mode = MODES.get(mode_name, MODES["interview"])
-    log.info(f"📞 join_call() called | call_type={call_type} | call_id={call_id} | mode={mode_name}")
+    log.info(f"📞 join_call() | call_type={call_type} | call_id={call_id} | mode={mode_name}")
 
     try:
         await agent.create_user()
@@ -120,26 +147,55 @@ async def join_call(agent: Agent, call_type: str, call_id: str, **kwargs) -> Non
         log.error("❌ Failed to create call:\n" + traceback.format_exc())
         raise
 
-    # ── Event listener: forward agent speech → UI ──────────────────────────
     speech_count = 0
+    seen_event_types: set[str] = set()
 
+    # ── CATCH-ALL event subscriber ─────────────────────────────────────────
+    # This logs every event the agent fires so we can see exactly what's available.
+    # It also extracts speech from any event that looks like it carries agent text.
     @agent.events.subscribe
-    async def on_agent_speech(event: RealtimeAgentSpeechTranscriptionEvent):
+    async def on_any_event(event):
         nonlocal speech_count
+
+        event_type = type(event).__name__
+
+        # Log each unique event type once so we know what's firing
+        if event_type not in seen_event_types:
+            seen_event_types.add(event_type)
+            attrs = [a for a in dir(event) if not a.startswith("_") and not callable(getattr(event, a, None))]
+            log.info(f"🔔 NEW event type seen: '{event_type}' | attrs: {attrs}")
+
         try:
-            if type(event).__name__ == "RealtimeAgentSpeechTranscriptionEvent":
-                text = getattr(event, "text", None)
-                if text:
-                    speech_count += 1
-                    log.info(f"🗣  Agent speech [{speech_count}]: {text[:120]}{'...' if len(text) > 120 else ''}")
-                    await call.send_custom_event({
-                        "type": "coaching_feedback",
-                        "message": text,
-                        "feedback_type": "info"
-                    })
-                    log.debug(f"📤 Custom event sent for speech [{speech_count}]")
+            # Strategy 1: exact class match (if import succeeded)
+            is_known_speech = (
+                RealtimeAgentSpeechTranscriptionEvent is not None
+                and isinstance(event, RealtimeAgentSpeechTranscriptionEvent)
+            )
+
+            # Strategy 2: name-based heuristic
+            is_heuristic_speech = is_speech_event(event)
+
+            if not (is_known_speech or is_heuristic_speech):
+                return
+
+            text = extract_text_from_event(event)
+
+            if not text:
+                log.debug(f"⚠️  Speech-like event '{event_type}' had no extractable text")
+                return
+
+            speech_count += 1
+            log.info(f"🗣  Agent speech [{speech_count}] via '{event_type}': {text[:120]}{'...' if len(text) > 120 else ''}")
+
+            await call.send_custom_event({
+                "type": "coaching_feedback",
+                "message": text,
+                "feedback_type": "info"
+            })
+            log.info(f"📤 Custom event sent [{speech_count}]")
+
         except Exception:
-            log.error("❌ Error in on_agent_speech handler:\n" + traceback.format_exc())
+            log.error(f"❌ Error processing event '{event_type}':\n" + traceback.format_exc())
 
     # ── Join the call ──────────────────────────────────────────────────────
     try:
@@ -149,14 +205,13 @@ async def join_call(agent: Agent, call_type: str, call_id: str, **kwargs) -> Non
 
             # Send greeting
             try:
-                log.info(f"👋 Sending greeting: '{mode['greeting']}'")
+                log.info(f"👋 Sending greeting...")
                 await agent.simple_response(mode["greeting"])
                 log.info("✅ Greeting sent")
             except Exception:
                 log.error("❌ Failed to send greeting:\n" + traceback.format_exc())
 
-            # Wait indefinitely until the call ends
-            log.info("⏳ Agent waiting in call (press Ctrl+C or end call to stop)...")
+            log.info("⏳ Agent waiting in call...")
             try:
                 await asyncio.Event().wait()
             except asyncio.CancelledError:

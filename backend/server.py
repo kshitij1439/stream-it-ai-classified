@@ -1,33 +1,33 @@
 import os
 import secrets
+import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from getstream import Stream
+from pydantic import BaseModel
 
 load_dotenv()
 
-STREAM_API_KEY    = os.getenv("STREAM_API_KEY")
-STREAM_API_SECRET = os.getenv("STREAM_API_SECRET")
+STREAM_API_KEY    = os.environ.get("STREAM_API_KEY")
+STREAM_API_SECRET = os.environ.get("STREAM_API_SECRET")
+ALLOWED_ORIGINS   = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
+AGENT_RUNNER_URL  = os.environ.get("AGENT_RUNNER_URL", "http://34.14.203.223:8000")
 
-app = FastAPI(title="Interview Coach Token Server")
+app = FastAPI(title="Vision Coach Token Server")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-from pydantic import BaseModel
 
 class JoinRequest(BaseModel):
     mode: str = "interview"
 
 @app.post("/join")
 async def join(req: JoinRequest):
-    if not STREAM_API_KEY or not STREAM_API_SECRET:
-        return {"error": "Missing STREAM_API_KEY or STREAM_API_SECRET in .env"}
     client  = Stream(api_key=STREAM_API_KEY, api_secret=STREAM_API_SECRET)
     user_id = "candidate_" + secrets.token_hex(4)
     call_id = "call_" + secrets.token_hex(6)
@@ -38,28 +38,27 @@ async def join(req: JoinRequest):
         "api_key":   STREAM_API_KEY,
         "call_id":   call_id,
         "call_type": "default",
-        "mode":      req.mode
+        "mode":      req.mode,
     }
+
+@app.post("/sessions")
+async def sessions(request: Request):
+    body = await request.json()
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{AGENT_RUNNER_URL}/sessions",
+            json=body,
+            timeout=15
+        )
+        return resp.json()
 
 @app.get("/modes")
 async def get_modes():
     return {
         "modes": [
-            {
-                "id": "interview",
-                "name": "Interview Coach",
-                "description": "Strict but kind AI interview coach to practice behavioral & technical Qs."
-            },
-            {
-                "id": "gym",
-                "name": "Gym Trainer",
-                "description": "Safety-focused AI trainer to track form and count reps."
-            },
-            {
-                "id": "speaking",
-                "name": "Public Speaking Coach",
-                "description": "Encouraging AI coach to analyze your body language, pacing and filler words."
-            }
+            {"id": "interview", "name": "Interview Coach", "description": "Strict but kind AI interview coach."},
+            {"id": "gym", "name": "Gym Trainer", "description": "Safety-focused AI trainer."},
+            {"id": "speaking", "name": "Public Speaking Coach", "description": "Encouraging AI coach."},
         ]
     }
 
@@ -69,4 +68,5 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)

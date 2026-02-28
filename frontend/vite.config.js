@@ -8,10 +8,10 @@ export default defineConfig({
     server: {
         port: 5173,
         proxy: {
-            "/join": { target: API_URL, changeOrigin: true },
-            "/modes": { target: API_URL, changeOrigin: true },
-            "/health": { target: API_URL, changeOrigin: true },
-            "/sessions": { target: "http://localhost:8000", changeOrigin: true },
+            "/join":     { target: API_URL, changeOrigin: true },
+            "/modes":    { target: API_URL, changeOrigin: true },
+            "/health":   { target: API_URL, changeOrigin: true },
+            "/sessions": { target: API_URL, changeOrigin: true },
         },
     },
 });

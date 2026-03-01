@@ -34,13 +34,13 @@ Open `backend/.env` and add your API keys. You will need:
 You will need three separate terminal windows:
 ```bash
 # Terminal 1: FastAPI Token Server
-make dev-server
+make dev-server ------------removed
 
 # Terminal 2: Vision Agents Coaching backend
-make dev-agent
+make dev-agent ------------removed
 
 # Terminal 3: React Frontend UI
-make dev-frontend
+make dev-frontend ------------removed
 ```
 
 Then visit `http://localhost:5173`.

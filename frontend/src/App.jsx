@@ -13,7 +13,6 @@ function App() {
         try {
             const API = import.meta.env.VITE_API_URL || '';
 
-            // 1. Get Stream token + call_id from server
             const response = await fetch(`${API}/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

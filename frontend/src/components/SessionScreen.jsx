@@ -10,7 +10,6 @@ import { extractStats } from "../lib/statsExtractor";
 import { Loader2 } from "lucide-react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 
-// modeConfig = full object from LobbyScreen's BUILTIN_MODES / custom
 export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
     const [videoClient, setVideoClient] = useState(null);
     const [call, setCall] = useState(null);
@@ -44,6 +43,14 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
             return updated;
         });
     }, [activeSchema]);
+
+    // Dev helper: window.__testCoaching("Focus score: 80. Distraction: 2. Posture issue.")
+    useEffect(() => {
+        window.__testCoaching = (message) => handleCustomEvent({
+            custom: { type: "coaching_feedback", message, feedback_type: "info" }
+        });
+        return () => { delete window.__testCoaching; };
+    }, [handleCustomEvent]);
 
     useEffect(() => {
         if (clientRef.current) return;
@@ -82,13 +89,17 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
                 if (!mounted) return;
 
                 ["custom", "call.custom", "call.custom_event"].forEach(name => {
-                    try { myCall.on(name, handleCustomEvent); } catch (_) { }
+                    try {
+                        myCall.on(name, handleCustomEvent);
+                        console.log(`[SessionScreen] ✅ Subscribed to: ${name}`);
+                    } catch (e) {
+                        console.warn(`[SessionScreen] Could not subscribe to '${name}':`, e);
+                    }
                 });
 
                 setVideoClient(vClient);
                 setCall(myCall);
 
-                // Send session start to agent runner with full mode config
                 if (!agentStartedRef.current) {
                     agentStartedRef.current = true;
                     const API = import.meta.env.VITE_API_URL || '';
@@ -99,9 +110,9 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
                             mode: modeConfig?.id || "interview",
                             mode_config: {
                                 instructions: modeConfig?.instructions,
-                                greeting: modeConfig?.greeting,
-                                yolo: modeConfig?.yolo || "yolo11n-pose.pt",
-                                fps: modeConfig?.fps || 1,
+                                greeting:     modeConfig?.greeting,
+                                yolo:         modeConfig?.yolo || "yolo11n-pose.pt",
+                                fps:          modeConfig?.fps || 1,
                                 stats_schema: modeConfig?.stats_schema || [],
                             },
                             call_id,

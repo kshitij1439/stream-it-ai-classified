@@ -6,7 +6,7 @@ import {
 import CoachingPanel from "./CoachingPanel";
 import QuestionCard from "./QuestionCard";
 import StatsBar from "./StatsBar";
-import { extractStats } from "../lib/statsExtractor";
+import { extractStats } from "../lib/Statsextractor.js";
 import { Loader2 } from "lucide-react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 

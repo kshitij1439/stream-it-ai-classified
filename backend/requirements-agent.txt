@@ -1,0 +1,6 @@
+﻿vision-agents==0.1.0
+vision-agents-plugins-getstream==0.3.8
+vision-agents-plugins-deepgram==0.3.8
+vision-agents-plugins-elevenlabs==0.3.8
+vision-agents-plugins-openai==0.3.8
+ultralytics==8.2.0

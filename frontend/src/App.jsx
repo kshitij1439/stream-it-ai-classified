@@ -5,20 +5,24 @@ import ReportCard from './components/ReportCard';
 
 function App() {
     const [sessionData, setSessionData] = useState(null);
-    const [jobRole, setJobRole] = useState(null);
+    const [modeConfig, setModeConfig] = useState(null);
     const [reportData, setReportData] = useState(null);
 
-    const handleJoin = async (selectedMode) => {
+    // LobbyScreen calls onJoin(selectedModeId, fullModeConfig)
+    const handleJoin = async (selectedMode, fullModeConfig) => {
         try {
             const API = import.meta.env.VITE_API_URL || '';
+
             const response = await fetch(`${API}/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode: selectedMode })
+                body: JSON.stringify({ mode: selectedMode }),
             });
             const data = await response.json();
-            setJobRole(selectedMode); // Storing selectedMode in jobRole for backward compatibility
-            setSessionData(data);
+
+            // Store full mode config so SessionScreen can send it to agent
+            setModeConfig(fullModeConfig);
+            setSessionData({ ...data });
             setReportData(null);
         } catch (error) {
             console.error("Failed to join session:", error);
@@ -28,16 +32,16 @@ function App() {
 
     const handleLeave = (data) => {
         setSessionData(null);
-        if (data && data.stats) {
+        if (data?.stats) {
             setReportData(data);
         } else {
-            setJobRole(null);
+            setModeConfig(null);
         }
     };
 
     const handleBackToLobby = () => {
         setReportData(null);
-        setJobRole(null);
+        setModeConfig(null);
     };
 
     return (
@@ -45,9 +49,18 @@ function App() {
             {!sessionData && !reportData ? (
                 <LobbyScreen onJoin={handleJoin} />
             ) : reportData ? (
-                <ReportCard reportData={reportData} jobRole={jobRole} onBackToLobby={handleBackToLobby} />
+                <ReportCard
+                    reportData={reportData}
+                    jobRole={modeConfig?.id}
+                    statsSchema={modeConfig?.stats_schema || []}
+                    onBackToLobby={handleBackToLobby}
+                />
             ) : (
-                <SessionScreen sessionData={sessionData} jobRole={jobRole} onLeave={handleLeave} />
+                <SessionScreen
+                    sessionData={sessionData}
+                    modeConfig={modeConfig}
+                    onLeave={handleLeave}
+                />
             )}
         </div>
     );

@@ -108,10 +108,12 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
 
                 setVideoClient(vClient);
                 setCall(myCall);
-
                 if (!agentStartedRef.current) {
                     agentStartedRef.current = true;
                     const API = import.meta.env.VITE_API_URL || '';
+                    // Wait 3s for user WebRTC to fully establish before spawning agent
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    if (!mounted) return; // user left during wait
                     fetch(`${API}/sessions`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

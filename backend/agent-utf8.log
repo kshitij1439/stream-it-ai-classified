@@ -1,0 +1,507 @@
+﻿uv : 19:20:31 | INFO     
+| __main__ | \U0001f3ac 
+Starting vision-agents 
+runner...
+At line:1 char:1
++ uv run python agent.py 
+serve > agent.log 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpeci    fied: 
+(19:20:31 |     
+INFO...gents run    
+ner...:String) []    , 
+RemoteException
+    + FullyQualifiedE    
+rrorId : NativeCo    
+mmandError
+ 
+[97m19:20:31.923 | INFO  
+   | Started server 
+process [35240][0m
+[97m19:20:31.923 | INFO  
+   | Waiting for 
+application startup.[0m
+[97m19:20:31.923 | INFO  
+   | Creating agent...[0m
+19:20:31 | INFO     | 
+__main__ | \U0001f6e0  
+Creating agent | 
+mode='interview' | fps=1 
+| yolo=yolo11n-pose.pt
+19:20:32 | WARNING  | 
+google_genai._api_client 
+| Both GOOGLE_API_KEY and 
+GEMINI_API_KEY are set. 
+Using GOOGLE_API_KEY.
+[97m19:20:35.497 | INFO  
+   | \u2705 YOLO pose 
+model loaded: 
+yolo11n-pose.pt on cpu[0m
+[97m19:20:35.502 | INFO  
+   | \U0001f916 YOLO Pose 
+Processor initialized 
+with model: 
+yolo11n-pose.pt[0m
+[97m19:20:35.502 | INFO  
+   | [Agent: agent] | 
+\U0001f3a5 Video track 
+initialized from video 
+publisher[0m
+19:20:35 | INFO     | 
+__main__ | \u2705 Agent 
+created successfully
+[97m19:20:35.502 | INFO  
+   | Warming up agent 
+components...[0m
+[97m19:20:35.609 | INFO  
+   | Agent warmup 
+completed[0m
+[97m19:20:35.609 | INFO  
+   | [Agent: agent] | 
+\U0001f916 Stopping the 
+agent[0m
+[97m19:20:35.609 | INFO  
+   | [Agent: agent] | 
+\U0001f916 Agent 
+stopped[0m
+[97m19:20:35.609 | INFO  
+   | Application startup 
+complete.[0m
+[97m19:20:35.611 | INFO  
+   | Uvicorn running on 
+http://127.0.0.1:8000 
+(Press CTRL+C to quit)[0m
+19:21:07 | INFO     | 
+__main__ | \U0001f6e0  
+Creating agent | 
+mode='interview' | fps=1 
+| yolo=yolo11n-pose.pt
+19:21:07 | WARNING  | 
+google_genai._api_client 
+| Both GOOGLE_API_KEY and 
+GEMINI_API_KEY are set. 
+Using GOOGLE_API_KEY.
+[97m19:21:08.585 | INFO  
+   | \u2705 YOLO pose 
+model loaded: 
+yolo11n-pose.pt on cpu[0m
+[97m19:21:08.586 | INFO  
+   | \U0001f916 YOLO Pose 
+Processor initialized 
+with model: 
+yolo11n-pose.pt[0m
+[97m19:21:08.586 | INFO  
+   | [Agent: agent] | 
+\U0001f3a5 Video track 
+initialized from video 
+publisher[0m
+19:21:08 | INFO     | 
+__main__ | \u2705 Agent 
+created successfully
+[97m19:21:08.586 | INFO  
+   | Started agent 
+session with id b90be66e-a
+23c-4d72-93c5-922bc7f9bd9d
+[0m
+19:21:08.586 | INFO     | 
+127.0.0.1:52914 | "POST 
+/sessions HTTP/1.1" | 201 
+Created
+19:21:08 | INFO     | 
+__main__ | \U0001f4de 
+join_call() | 
+call_type=default | 
+call_id=call_testing1 | 
+mode=interview
+19:21:09 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/users?api
+_key=46mspeq69mps 
+"HTTP/1.1 201 Created"
+19:21:09 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/video/cal
+l/default/call_testing1?ap
+i_key=46mspeq69mps 
+"HTTP/1.1 201 Created"
+19:21:09 | INFO     | 
+__main__ | \U0001f4f2 
+Call object created: 
+call_testing1
+19:21:09 | INFO     | 
+__main__ | \U0001f680 
+Joining call 
+'call_testing1' ...
+[97m19:21:09.905 | INFO  
+   | [Agent: agent] | 
+\U0001f916 Agent joining 
+call: call_testing1[0m
+[97m19:21:10.758 | INFO  
+   | Gemini live 
+connected to session <goog
+le.genai.live.AsyncSession
+ object at 
+0x0000022D57AD5D90>[0m
+19:21:10 | INFO     | gets
+tream.video.rtc.connection
+_manager | Connecting to 
+SFU
+19:21:10 | INFO     | gets
+tream.video.rtc.coordinato
+r.ws | Connecting to 
+coordinator
+19:21:11 | INFO     | gets
+tream.video.rtc.coordinato
+r.ws | Successfully 
+connected and 
+authenticated
+19:21:12 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/video/cal
+l/default/call_testing1/jo
+in?api_key=46mspeq69mps 
+"HTTP/1.1 201 Created"
+19:21:12 | INFO     | 
+getstream.video.rtc.pc | 
+creating subscriber peer 
+connection with 
+configuration: RTCConfigur
+ation(iceServers=[RTCIceSe
+rver(urls=['turn:sfu-aws-m
+umbai-vp1-55f6a00548cb.str
+eam-io-video.com:3478'], u
+sername='1525030/default:c
+all_testing1/agent/8W8Dk2I
+w0HAYVr9gWU8qng', credenti
+al='hEzJpj0xzhiXhw0InNRycT
+2WZBXKrcDB', credentialTyp
+e='password'), RTCIceServe
+r(urls=['turn:sfu-aws-mumb
+ai-vp1-55f6a00548cb.stream
+-io-video.com:3478?transpo
+rt=tcp'], username='152503
+0/default:call_testing1/ag
+ent/8W8Dk2Iw0HAYVr9gWU8qng
+', credential='hEzJpj0xzhi
+Xhw0InNRycT2WZBXKrcDB', cr
+edentialType='password'), 
+RTCIceServer(urls=['turns:
+turn.stream-io-video.com:4
+43?transport=tcp'], 
+username='1772416270:', cr
+edential='thmPskCi8+Spy/g4
+z2bQ8KauaMo=', credentialT
+ype='password'), RTCIceSer
+ver(urls=['turn:turn.strea
+m-io-video.com:443?transpo
+rt=udp'], 
+username='1772416270:', cr
+edential='thmPskCi8+Spy/g4
+z2bQ8KauaMo=', credentialT
+ype='password')], bundlePo
+licy=<RTCBundlePolicy.MAX_
+BUNDLE: 'max-bundle'>)
+19:21:12 | INFO     | gets
+tream.video.rtc.connection
+_utils | Connecting to 
+WebSocket at wss://sfu-aws
+-mumbai-vp1-55f6a00548cb.s
+tream-io-video.com/ws
+19:21:12 | INFO     | 
+websocket | Websocket 
+connected
+19:21:12 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/video/cal
+l/default/call_testing1?ap
+i_key=46mspeq69mps&connect
+ion_id=699728f2-0a05-1318-
+0300-000000921905 
+"HTTP/1.1 201 Created"
+19:21:12 | INFO     | gets
+tream.video.rtc.stats_repo
+rter | SfuStatsReporter 
+started (interval=8000ms)
+19:21:12 | INFO     | gets
+tream.video.rtc.connection
+_manager | Successfully 
+connected to SFU
+19:21:12 | INFO     | gets
+tream.video.rtc.network_mo
+nitor | Starting network 
+connectivity monitoring
+[97m19:21:12.245 | INFO  
+   | [Agent: agent] | 
+\U0001f916 Agent joined 
+call: call_testing1[0m
+19:21:12 | INFO     | gets
+tream.video.rtc.track_util
+ | Detecting video track 
+properties
+19:21:14 | INFO     | gets
+tream.video.rtc.track_util
+ | Calculated FPS: 30 
+(delta: 1/30s)
+19:21:14 | INFO     | gets
+tream.video.rtc.track_util
+ | Detected video 
+properties: 1280x720 at 
+30fps
+19:21:14 | INFO     | gets
+tream.video.rtc.track_util
+ | Calculated bitrate: 
+2211 kbps (based on 0.08 
+bits/pixel)
+19:21:14 | INFO     | gets
+tream.video.rtc.peer_conne
+ction | Adding tracks: 0 
+tracks
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Creating publisher peer 
+connection with 
+configuration: RTCConfigur
+ation(iceServers=[RTCIceSe
+rver(urls=['turn:sfu-aws-m
+umbai-vp1-55f6a00548cb.str
+eam-io-video.com:3478'], u
+sername='1525030/default:c
+all_testing1/agent/8W8Dk2I
+w0HAYVr9gWU8qng', credenti
+al='hEzJpj0xzhiXhw0InNRycT
+2WZBXKrcDB', credentialTyp
+e='password'), RTCIceServe
+r(urls=['turn:sfu-aws-mumb
+ai-vp1-55f6a00548cb.stream
+-io-video.com:3478?transpo
+rt=tcp'], username='152503
+0/default:call_testing1/ag
+ent/8W8Dk2Iw0HAYVr9gWU8qng
+', credential='hEzJpj0xzhi
+Xhw0InNRycT2WZBXKrcDB', cr
+edentialType='password'), 
+RTCIceServer(urls=['turns:
+turn.stream-io-video.com:4
+43?transport=tcp'], 
+username='1772416270:', cr
+edential='thmPskCi8+Spy/g4
+z2bQ8KauaMo=', credentialT
+ype='password'), RTCIceSer
+ver(urls=['turn:turn.strea
+m-io-video.com:443?transpo
+rt=udp'], 
+username='1772416270:', cr
+edential='thmPskCi8+Spy/g4
+z2bQ8KauaMo=', credentialT
+ype='password')], bundlePo
+licy=<RTCBundlePolicy.MAX_
+BUNDLE: 'max-bundle'>)
+19:21:14 | INFO     | gets
+tream.video.rtc.peer_conne
+ction | Added relayed 
+audio track 04d6b40a-daba-
+432d-bb8d-c4d0325c9a06
+19:21:14 | INFO     | gets
+tream.video.rtc.peer_conne
+ction | Added relayed 
+video track af2ba16e-0af4-
+422d-b214-30230e957720
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Publisher ICE gathering 
+state changed to gathering
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Publisher ICE gathering 
+state changed to complete
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Publisher: All ICE 
+candidates have been 
+gathered.
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Waiting for publisher 
+connection with 15.0s 
+timeout
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Publisher ICE connection 
+state changed to checking
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Publisher connection 
+state changed to 
+connecting
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Publisher ICE connection 
+state changed to completed
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Publisher connection 
+state changed to connected
+19:21:14 | INFO     | 
+getstream.video.rtc.pc | 
+Publisher successfully 
+connected
+[97m19:21:14.583 | INFO  
+   | \U0001f916 Agent 
+ready to speak[0m
+[97m19:21:14.583 | INFO  
+   | \U0001f3a5 Agent 
+ready to publish video[0m
+19:21:14 | INFO     | gets
+tream.video.rtc.tracks | 
+Handling track published: 
+agent - bbed94d8-5d8f-4533
+-b985-73dfddf4f775 - 1
+19:21:15 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/query?api_key=46mspeq69
+mps "HTTP/1.1 201 Created"
+[97m19:21:15.172 | INFO  
+   | [Agent: agent] | 
+Waiting for other 
+participants to join[0m
+19:21:15 | INFO     | gets
+tream.video.rtc.tracks | 
+Handling track published: 
+agent - bbed94d8-5d8f-4533
+-b985-73dfddf4f775 - 2
+[97m19:21:25.183 | INFO  
+   | [Agent: agent] | No 
+participants joined after 
+10.0s timeout, 
+proceeding.[0m
+19:21:25 | INFO     | 
+__main__ | \u2705 Agent 
+joined call successfully
+[97m19:21:25.183 | INFO  
+   | [Agent: agent] | 
+\U0001f916 Asking LLM to 
+reply to "Hello! I am 
+your AI coach. Let's 
+begin."[0m
+19:21:25 | INFO     | 
+__main__ | \u2705 
+Greeting sent
+[97m19:21:27.194 | INFO  
+   | [Agent: agent] | 
+\U0001f3a4 [Agent 
+transcript]: Hello! 
+Actually,[0m
+[97m19:21:27.471 | INFO  
+   | [Agent: agent] | 
+\U0001f3a4 [Agent 
+transcript]:  I[0m
+19:21:27 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/message?api_key=46mspeq
+69mps "HTTP/1.1 201 
+Created"
+[97m19:21:27.696 | INFO  
+   | [Agent: agent] | 
+\U0001f3a4 [Agent 
+transcript]:  am[0m
+[97m19:21:27.703 | INFO  
+   | [Agent: agent] | 
+\U0001f3a4 [Agent 
+transcript]:  the AI[0m
+19:21:27 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/message?api_key=46mspeq
+69mps "HTTP/1.1 201 
+Created"
+[97m19:21:27.790 | INFO  
+   | [Agent: agent] | 
+\U0001f3a4 [Agent 
+transcript]:  coach[0m
+[97m19:21:27.913 | INFO  
+   | [Agent: agent] | 
+\U0001f3a4 [Agent 
+transcript]:  and[0m
+[97m19:21:27.994 | INFO  
+   | [Agent: agent] | 
+\U0001f3a4 [Agent 
+transcript]:  I am[0m
+19:21:28 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/message?api_key=46mspeq
+69mps "HTTP/1.1 201 
+Created"
+[97m19:21:28.067 | INFO  
+   | [Agent: agent] | 
+\U0001f3a4 [Agent 
+transcript]:  ready[0m
+[97m19:21:28.116 | INFO  
+   | [Agent: agent] | 
+\U0001f3a4 [Agent 
+transcript]:  to 
+begin.[0m
+19:21:28 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/message?api_key=46mspeq
+69mps "HTTP/1.1 201 
+Created"
+19:21:28 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/message?api_key=46mspeq
+69mps "HTTP/1.1 201 
+Created"
+19:21:28 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/message?api_key=46mspeq
+69mps "HTTP/1.1 201 
+Created"
+19:21:28 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/message?api_key=46mspeq
+69mps "HTTP/1.1 201 
+Created"
+19:21:29 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/message?api_key=46mspeq
+69mps "HTTP/1.1 201 
+Created"
+19:21:29 | INFO     | 
+httpx | HTTP Request: 
+POST https://chat.stream-i
+o-api.com/api/v2/chat/chan
+nels/messaging/call_testin
+g1/message?api_key=46mspeq
+69mps "HTTP/1.1 201 
+Created"

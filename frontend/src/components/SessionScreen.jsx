@@ -22,12 +22,17 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
     const clientRef = useRef(null);
     const agentStartedRef = useRef(false);
 
+    const activeSchemaRef = useRef(modeConfig?.stats_schema || []);
+
     const handleCustomEvent = useCallback((event) => {
         console.log("[SessionScreen] Raw custom event:", event);
         const data = event?.custom ?? event?.data ?? event?.payload ?? event;
         if (data?.type !== "coaching_feedback") return;
 
-        if (data.stats_schema?.length) setActiveSchema(data.stats_schema);
+        if (data.stats_schema?.length) {
+            setActiveSchema(data.stats_schema);
+            activeSchemaRef.current = data.stats_schema;
+        }
 
         const newMsg = {
             id: Date.now(),
@@ -38,11 +43,24 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
 
         setMessages(prev => {
             const updated = [...prev, newMsg];
-            const schema = data.stats_schema?.length ? data.stats_schema : activeSchema;
+            const schema = data.stats_schema?.length ? data.stats_schema : activeSchemaRef.current;
             setStats(extractStats(updated, schema));
             return updated;
         });
-    }, [activeSchema]);
+    }, []);
+
+    useEffect(() => {
+        if (!call) return;
+        const events = ["custom", "call.custom", "call.custom_event"];
+        events.forEach(name => {
+            try { call.on(name, handleCustomEvent); } catch (_) { }
+        });
+        return () => {
+            events.forEach(name => {
+                try { call.off(name, handleCustomEvent); } catch (_) { }
+            });
+        };
+    }, [call, handleCustomEvent]);
 
     // Dev helper: window.__testCoaching("Focus score: 80. Distraction: 2. Posture issue.")
     useEffect(() => {
@@ -88,15 +106,6 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
 
                 if (!mounted) return;
 
-                ["custom", "call.custom", "call.custom_event"].forEach(name => {
-                    try {
-                        myCall.on(name, handleCustomEvent);
-                        console.log(`[SessionScreen] ✅ Subscribed to: ${name}`);
-                    } catch (e) {
-                        console.warn(`[SessionScreen] Could not subscribe to '${name}':`, e);
-                    }
-                });
-
                 setVideoClient(vClient);
                 setCall(myCall);
 
@@ -110,9 +119,9 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
                             mode: modeConfig?.id || "interview",
                             mode_config: {
                                 instructions: modeConfig?.instructions,
-                                greeting:     modeConfig?.greeting,
-                                yolo:         modeConfig?.yolo || "yolo11n-pose.pt",
-                                fps:          modeConfig?.fps || 1,
+                                greeting: modeConfig?.greeting,
+                                yolo: modeConfig?.yolo || "yolo11n-pose.pt",
+                                fps: modeConfig?.fps || 1,
                                 stats_schema: modeConfig?.stats_schema || [],
                             },
                             call_id,
@@ -133,17 +142,12 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
 
         return () => {
             mounted = false;
-            if (callRef.current) {
-                ["custom", "call.custom", "call.custom_event"].forEach(name => {
-                    try { callRef.current.off(name, handleCustomEvent); } catch (_) { }
-                });
-            }
             callRef.current?.leave().catch(console.error);
             clientRef.current?.disconnectUser().catch(console.error);
             clientRef.current = null;
             agentStartedRef.current = false;
         };
-    }, [sessionData, handleCustomEvent, modeConfig]);
+    }, [sessionData, modeConfig]);
 
     const handleLeave = () => {
         callRef.current?.leave().catch(console.error);

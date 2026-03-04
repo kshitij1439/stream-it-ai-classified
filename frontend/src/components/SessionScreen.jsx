@@ -20,7 +20,6 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
 
     const callRef = useRef(null);
     const clientRef = useRef(null);
-    const agentStartedRef = useRef(false);
 
     const activeSchemaRef = useRef(modeConfig?.stats_schema || []);
 
@@ -105,35 +104,9 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
                 }
 
                 if (!mounted) return;
-
                 setVideoClient(vClient);
                 setCall(myCall);
-                if (!agentStartedRef.current) {
-                    agentStartedRef.current = true;
-                    const API = import.meta.env.VITE_API_URL || '';
-                    // Wait 3s for user WebRTC to fully establish before spawning agent
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    if (!mounted) return; // user left during wait
-                    fetch(`${API}/sessions`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            mode: modeConfig?.id || "interview",
-                            mode_config: {
-                                instructions: modeConfig?.instructions,
-                                greeting: modeConfig?.greeting,
-                                yolo: modeConfig?.yolo || "yolo11n-pose.pt",
-                                fps: modeConfig?.fps || 1,
-                                stats_schema: modeConfig?.stats_schema || [],
-                            },
-                            call_id,
-                            call_type: "default",
-                        }),
-                    })
-                        .then(r => r.json())
-                        .then(d => console.log("[SessionScreen] /sessions response:", d))
-                        .catch(e => console.error("[SessionScreen] /sessions error:", e));
-                }
+
             } catch (err) {
                 console.error("[SessionScreen] initCall failed:", err);
                 if (mounted) setError(err.message || String(err));
@@ -147,7 +120,6 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
             callRef.current?.leave().catch(console.error);
             clientRef.current?.disconnectUser().catch(console.error);
             clientRef.current = null;
-            agentStartedRef.current = false;
         };
     }, [sessionData, modeConfig]);
 

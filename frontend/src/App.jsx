@@ -7,13 +7,14 @@ function App() {
     const [sessionData, setSessionData] = useState(null);
     const [modeConfig, setModeConfig] = useState(null);
     const [reportData, setReportData] = useState(null);
+    const [joining, setJoining] = useState(false);
 
-    // LobbyScreen calls onJoin(selectedModeId, fullModeConfig)
     const handleJoin = async (selectedMode, fullModeConfig) => {
+        if (joining) return;
+        setJoining(true);
         try {
             const API = import.meta.env.VITE_API_URL || '';
 
-            // 1. Get token first (creates call_id)
             const joinRes = await fetch(`${API}/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -21,7 +22,6 @@ function App() {
             });
             const data = await joinRes.json();
 
-            // 2. Spawn agent BEFORE user joins
             await fetch(`${API}/sessions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -39,16 +39,16 @@ function App() {
                 }),
             });
 
-            // 3. Small wait for agent to get ready
             await new Promise(r => setTimeout(r, 2000));
 
-            // 4. NOW user joins
             setModeConfig(fullModeConfig);
             setSessionData({ ...data });
             setReportData(null);
         } catch (error) {
             console.error("Failed to join session:", error);
             alert("Failed to join session. Is the backend running?");
+        } finally {
+            setJoining(false);
         }
     };
 
@@ -69,7 +69,7 @@ function App() {
     return (
         <div className="app-container">
             {!sessionData && !reportData ? (
-                <LobbyScreen onJoin={handleJoin} />
+                <LobbyScreen onJoin={handleJoin} joining={joining} />
             ) : reportData ? (
                 <ReportCard
                     reportData={reportData}

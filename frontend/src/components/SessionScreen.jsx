@@ -7,8 +7,36 @@ import CoachingPanel from "./CoachingPanel";
 import QuestionCard from "./QuestionCard";
 import StatsBar from "./StatsBar";
 import { extractStats } from "../lib/Statsextractor.js";
-import { Loader2 } from "lucide-react";
+import { Loader2, BarChart2, HelpCircle, MessageSquare } from "lucide-react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
+
+function ToggleBtn({ icon: Icon, label, active, onClick }) {
+    return (
+        <button
+            onClick={onClick}
+            title={`${active ? "Hide" : "Show"} ${label}`}
+            style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                background: active ? "rgba(88,166,255,0.18)" : "rgba(15,22,36,0.75)",
+                border: `1px solid ${active ? "rgba(88,166,255,0.4)" : "rgba(255,255,255,0.12)"}`,
+                borderRadius: 8,
+                color: active ? "#58a6ff" : "#94a3b8",
+                padding: "6px 10px",
+                cursor: "pointer",
+                fontSize: 11,
+                fontWeight: 700,
+                backdropFilter: "blur(8px)",
+                transition: "all 0.18s",
+                whiteSpace: "nowrap",
+            }}
+        >
+            <Icon size={13} />
+            {label}
+        </button>
+    );
+}
 
 export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
     const [videoClient, setVideoClient] = useState(null);
@@ -18,10 +46,13 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
     const [activeSchema, setActiveSchema] = useState(modeConfig?.stats_schema || []);
     const [error, setError] = useState(null);
 
+    const [showStats, setShowStats] = useState(true);
+    const [showQuestions, setShowQuestions] = useState(true);
+    const [showCoaching, setShowCoaching] = useState(true);
+
     const callRef = useRef(null);
     const clientRef = useRef(null);
-    const agentStartedRef = useRef(false);
-
+    
     const activeSchemaRef = useRef(modeConfig?.stats_schema || []);
 
     const handleCustomEvent = useCallback((event) => {
@@ -62,7 +93,6 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
         };
     }, [call, handleCustomEvent]);
 
-    // Dev helper: window.__testCoaching("Focus score: 80. Distraction: 2. Posture issue.")
     useEffect(() => {
         window.__testCoaching = (message) => handleCustomEvent({
             custom: { type: "coaching_feedback", message, feedback_type: "info" }
@@ -105,35 +135,9 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
                 }
 
                 if (!mounted) return;
-
                 setVideoClient(vClient);
                 setCall(myCall);
-                if (!agentStartedRef.current) {
-                    agentStartedRef.current = true;
-                    const API = import.meta.env.VITE_API_URL || '';
-                    // Wait 3s for user WebRTC to fully establish before spawning agent
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    if (!mounted) return; // user left during wait
-                    fetch(`${API}/sessions`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            mode: modeConfig?.id || "interview",
-                            mode_config: {
-                                instructions: modeConfig?.instructions,
-                                greeting: modeConfig?.greeting,
-                                yolo: modeConfig?.yolo || "yolo11n-pose.pt",
-                                fps: modeConfig?.fps || 1,
-                                stats_schema: modeConfig?.stats_schema || [],
-                            },
-                            call_id,
-                            call_type: "default",
-                        }),
-                    })
-                        .then(r => r.json())
-                        .then(d => console.log("[SessionScreen] /sessions response:", d))
-                        .catch(e => console.error("[SessionScreen] /sessions error:", e));
-                }
+
             } catch (err) {
                 console.error("[SessionScreen] initCall failed:", err);
                 if (mounted) setError(err.message || String(err));
@@ -147,7 +151,6 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
             callRef.current?.leave().catch(console.error);
             clientRef.current?.disconnectUser().catch(console.error);
             clientRef.current = null;
-            agentStartedRef.current = false;
         };
     }, [sessionData, modeConfig]);
 
@@ -183,10 +186,27 @@ export default function SessionScreen({ sessionData, modeConfig, onLeave }) {
                         </StreamTheme>
                     </StreamCall>
                 </StreamVideo>
-                <StatsBar stats={stats} statsSchema={activeSchema} />
-                <QuestionCard jobRole={modeConfig?.id} />
+
+                {showStats && <StatsBar stats={stats} statsSchema={activeSchema} />}
+                {showQuestions && <QuestionCard jobRole={modeConfig?.id} />}
+
+                {/* 3 toggle buttons — bottom left */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 34,
+                    left: 16,
+                    zIndex: 200,
+                    // display: "flex",
+                    margin:3,
+                    gap: 6,
+                }}>
+                    <ToggleBtn icon={BarChart2} label="Stats" active={showStats} onClick={() => setShowStats(v => !v)} />
+                    <ToggleBtn icon={HelpCircle} label="Questions" active={showQuestions} onClick={() => setShowQuestions(v => !v)} />
+                    <ToggleBtn icon={MessageSquare} label="Coaching" active={showCoaching} onClick={() => setShowCoaching(v => !v)} />
+                </div>
             </div>
-            <CoachingPanel messages={messages} />
+
+            {showCoaching && <CoachingPanel messages={messages} />}
         </div>
     );
 }

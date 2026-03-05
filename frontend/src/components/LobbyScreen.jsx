@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mic, Video, ChevronRight, LayoutGrid, Plus, X, Sliders, Zap, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Mic, Video, ChevronRight, LayoutGrid, Plus, X, Sliders, Zap, ChevronDown, ChevronUp, Info, Loader2 } from 'lucide-react';
 
 const MODE_ICONS = { briefcase: "💼", dumbbell: "🏋️", mic: "🎤", "chef-hat": "👨‍🍳", monitor: "🖥️", custom: "⚡" };
 
@@ -14,8 +14,8 @@ const ICON_OPTIONS = ["TrendingUp", "Activity", "Eye", "Mic", "User", "AlertTria
 
 const YOLO_MODELS = [
     { value: "yolo11n-pose.pt", label: "Pose — body keypoints", available: true },
-    { value: "yolo11n.pt",      label: "Detection — objects — coming soon", available: false },
-    { value: "yolo11n-seg.pt",  label: "Segmentation — coming soon",        available: false },
+    { value: "yolo11n.pt", label: "Detection — objects — coming soon", available: false },
+    { value: "yolo11n-seg.pt", label: "Segmentation — coming soon", available: false },
 ];
 
 export const BUILTIN_MODES = [
@@ -25,11 +25,11 @@ export const BUILTIN_MODES = [
         instructions: "You are a strict but kind AI interview coach. Watch the user's video feed and listen to their answers. Ask them specific technical and behavioral questions. Provide real-time feedback. VERY IMPORTANT: To update the UI metrics, you MUST use these key phrases in your feedback when relevant: 'Filler words: X' (where X is count of um/uhs), 'Posture issue' (if slouching), 'Great eye contact' or 'Needs eye contact', 'Good pace' or 'Too fast'. Be concise.",
         greeting: "Hello! I am your AI interview coach. Please introduce yourself when you are ready.",
         stats_schema: [
-            { key: "confidence",    label: "Confidence",     type: "score",  icon: "TrendingUp" },
-            { key: "eyeContact",    label: "Eye Contact",    type: "status", icon: "Eye" },
-            { key: "pace",          label: "Pace",           type: "status", icon: "Activity" },
-            { key: "fillerWords",   label: "Filler Words",   type: "count",  icon: "Mic" },
-            { key: "postureAlerts", label: "Posture Alerts", type: "count",  icon: "User" },
+            { key: "confidence", label: "Confidence", type: "score", icon: "TrendingUp" },
+            { key: "eyeContact", label: "Eye Contact", type: "status", icon: "Eye" },
+            { key: "pace", label: "Pace", type: "status", icon: "Activity" },
+            { key: "fillerWords", label: "Filler Words", type: "count", icon: "Mic" },
+            { key: "postureAlerts", label: "Posture Alerts", type: "count", icon: "User" },
         ],
     },
     {
@@ -38,9 +38,9 @@ export const BUILTIN_MODES = [
         instructions: "You are a strict, safety-focused gym trainer. Watch the user's video feed, tracking their body posture and form. Count reps verbally. Correct their form in real-time. VERY IMPORTANT: Use these EXACT key phrases: 'Reps: X' (count), 'Great form' or 'Form issue', 'Go deeper', 'Keep your chest up', 'Slow the descent', 'Watch your back'. Be highly observant and concise.",
         greeting: "Let's get to work! I'm your AI gym trainer. Stand back so I can see your full body, and tell me what exercise we are doing today.",
         stats_schema: [
-            { key: "repCount",      label: "Reps",           type: "count", icon: "Repeat" },
-            { key: "formScore",     label: "Form Score",     type: "score", icon: "TrendingUp" },
-            { key: "formAlerts",    label: "Form Issues",    type: "count", icon: "AlertTriangle" },
+            { key: "repCount", label: "Reps", type: "count", icon: "Repeat" },
+            { key: "formScore", label: "Form Score", type: "score", icon: "TrendingUp" },
+            { key: "formAlerts", label: "Form Issues", type: "count", icon: "AlertTriangle" },
             { key: "postureAlerts", label: "Posture Alerts", type: "count", icon: "User" },
         ],
     },
@@ -50,9 +50,9 @@ export const BUILTIN_MODES = [
         instructions: "You are an encouraging public speaking coach. Watch the user's video feed and listen to their speech. Focus on confidence, body language, and communication clarity. VERY IMPORTANT: Use these EXACT key phrases in your feedback: 'Great confidence' or 'Low confidence', 'Try planting your feet' (if swaying), 'Open your arms' (if closed), 'Filler words: X', 'Good pace' or 'Too fast'. Be concise.",
         greeting: "Hello! I am your public speaking coach. Whenever you are ready, start your presentation or speech.",
         stats_schema: [
-            { key: "confidence",   label: "Confidence",    type: "score",  icon: "TrendingUp" },
-            { key: "pace",         label: "Pace",          type: "status", icon: "Activity" },
-            { key: "fillerWords",  label: "Filler Words",  type: "count",  icon: "Mic" },
+            { key: "confidence", label: "Confidence", type: "score", icon: "TrendingUp" },
+            { key: "pace", label: "Pace", type: "status", icon: "Activity" },
+            { key: "fillerWords", label: "Filler Words", type: "count", icon: "Mic" },
             { key: "bodyLanguage", label: "Body Language", type: "status", icon: "User" },
         ],
     },
@@ -62,9 +62,9 @@ export const BUILTIN_MODES = [
         instructions: "You are a Michelin-star chef coach. Watch the user's hands and knife technique. VERY IMPORTANT: Use these EXACT key phrases: 'Safe grip' or 'Unsafe grip', 'Knife angle: X' (degrees), 'Good technique' or 'Technique issue', 'Slow down' (if too fast), 'Great control'. Monitor for dangerous hand positions. Be precise and safety-focused.",
         greeting: "Welcome to the kitchen! I'm your AI chef coach. Show me your ingredients and let's start cooking safely.",
         stats_schema: [
-            { key: "safetyScore",     label: "Safety Score",    type: "score",  icon: "Shield" },
-            { key: "techniqueAlerts", label: "Technique Issues", type: "count",  icon: "AlertTriangle" },
-            { key: "gripStatus",      label: "Knife Grip",       type: "status", icon: "Tool" },
+            { key: "safetyScore", label: "Safety Score", type: "score", icon: "Shield" },
+            { key: "techniqueAlerts", label: "Technique Issues", type: "count", icon: "AlertTriangle" },
+            { key: "gripStatus", label: "Knife Grip", type: "status", icon: "Tool" },
         ],
     },
     {
@@ -73,10 +73,10 @@ export const BUILTIN_MODES = [
         instructions: "You are a workplace ergonomics specialist. Monitor the user's posture at their desk in real-time. VERY IMPORTANT: Use these EXACT key phrases: 'Neck angle: X degrees' (forward tilt), 'Posture issue', 'Great posture', 'Adjust your monitor', 'Straighten your back', 'Wrist position issue'. Alert if bad posture persists over 2 minutes. Be calm and helpful.",
         greeting: "Hi! I'm your ergonomics coach. I'll silently monitor your posture and alert you when needed. Just keep working!",
         stats_schema: [
-            { key: "postureScore",  label: "Posture Score",  type: "score",  icon: "TrendingUp" },
-            { key: "neckAngle",     label: "Neck Angle",     type: "value",  unit: "°", icon: "Activity" },
-            { key: "postureAlerts", label: "Posture Alerts", type: "count",  icon: "AlertTriangle" },
-            { key: "wristStatus",   label: "Wrist Position", type: "status", icon: "Hand" },
+            { key: "postureScore", label: "Posture Score", type: "score", icon: "TrendingUp" },
+            { key: "neckAngle", label: "Neck Angle", type: "value", unit: "°", icon: "Activity" },
+            { key: "postureAlerts", label: "Posture Alerts", type: "count", icon: "AlertTriangle" },
+            { key: "wristStatus", label: "Wrist Position", type: "status", icon: "Hand" },
         ],
     },
 ];
@@ -113,7 +113,7 @@ select { color-scheme:dark; }
 input::placeholder, textarea::placeholder { color:rgba(148,163,184,0.38)!important; }
 `;
 
-export default function LobbyScreen({ onJoin }) {
+export default function LobbyScreen({ onJoin, joining = false }) {
     const [selectedMode, setSelectedMode] = useState("interview");
     const [customModes, setCustomModes] = useState([]);
     const [modalState, setModalState] = useState("closed");
@@ -134,7 +134,7 @@ export default function LobbyScreen({ onJoin }) {
         return () => { document.body.style.overflow = ''; };
     }, [modalState]);
 
-    const openModal  = () => setModalState("open");
+    const openModal = () => setModalState("open");
     const closeModal = () => {
         setModalState("closing");
         setTimeout(() => setModalState("closed"), 220);
@@ -164,7 +164,7 @@ export default function LobbyScreen({ onJoin }) {
         setEditingCustom({ ...DEFAULT_CUSTOM, id: "custom_" + Math.random().toString(36).slice(2, 6) });
     };
 
-    const handleJoin = () => onJoin(selectedMode, selectedModeConfig);
+    const handleJoin = () => !joining && onJoin(selectedMode, selectedModeConfig);
 
     const isClosing = modalState === "closing";
     const isVisible = modalState !== "closed";
@@ -262,14 +262,19 @@ export default function LobbyScreen({ onJoin }) {
                     </div>
 
                     {/* Start */}
-                    <button onClick={handleJoin} style={{
+                    <button onClick={handleJoin} disabled={joining} style={{
                         width: "100%", padding: "13px", borderRadius: 10, border: "none",
-                        background: "linear-gradient(135deg,#58a6ff 0%,#7c3aed 100%)",
-                        color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer",
+                        background: joining ? "rgba(88,166,255,0.4)" : "linear-gradient(135deg,#58a6ff 0%,#7c3aed 100%)",
+                        color: "#fff", fontWeight: 800, fontSize: 15, cursor: joining ? "not-allowed" : "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                         boxShadow: "0 4px 20px rgba(88,166,255,0.22)",
+                        transition: "all 0.2s",
                     }}>
-                        Start Session <ChevronRight size={17} />
+                        {joining ? (
+                            <><Loader2 size={17} className="animate-spin" /> Starting session...</>
+                        ) : (
+                            <>Start Session <ChevronRight size={17} /></>
+                        )}
                     </button>
                 </div>
             </div>

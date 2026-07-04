@@ -8,6 +8,7 @@ function App() {
     const [modeConfig, setModeConfig] = useState(null);
     const [reportData, setReportData] = useState(null);
     const [joining, setJoining] = useState(false);
+    const [showDemoModal, setShowDemoModal] = useState(false);
 
     const handleJoin = async (selectedMode, fullModeConfig) => {
         if (joining) return;
@@ -44,9 +45,9 @@ function App() {
             setModeConfig(fullModeConfig);
             setSessionData({ ...data });
             setReportData(null);
-        } catch (error) {            
-            alert('The live session requires a GPU-backed backend. Watch the demo to see how it works end-to-end:\n\nhttps://www.youtube.com/watch?v=mbGVku5KDQM');
-            alert("Failed to join session. Is the backend running?");
+        } catch (error) {
+            console.error('Failed to join session:', error);
+            setShowDemoModal(true);
         } finally {
             setJoining(false);
         }
@@ -64,7 +65,6 @@ function App() {
     const handleBackToLobby = () => {
         setReportData(null);
         setModeConfig(null);
-
     };
 
     return (
@@ -84,6 +84,58 @@ function App() {
                     modeConfig={modeConfig}
                     onLeave={handleLeave}
                 />
+            )}
+
+            {showDemoModal && (
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 9999,
+                        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                    onClick={() => setShowDemoModal(false)}
+                >
+                    <div
+                        style={{
+                            background: '#1e1e2e', borderRadius: '16px', padding: '32px 36px',
+                            maxWidth: '480px', width: '90%', textAlign: 'center',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.5)', color: '#fff',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <h3 style={{ margin: '0 0 12px', fontSize: '1.4rem' }}>🚀 GPU Backend Required</h3>
+                        <p style={{ opacity: 0.8, lineHeight: 1.6, margin: '0 0 20px' }}>
+                            The live session requires a GPU-backed backend. Watch the demo below to see how it works end-to-end.
+                        </p>
+                        <a
+                            href="https://www.youtube.com/watch?v=mbGVku5KDQM"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                display: 'inline-block', padding: '12px 28px',
+                                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                color: '#fff', borderRadius: '10px', textDecoration: 'none',
+                                fontWeight: 600, fontSize: '1rem',
+                                transition: 'transform 0.2s',
+                            }}
+                            onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
+                            onMouseLeave={e => e.target.style.transform = 'scale(1)'}
+                        >
+                            ▶ Watch Demo on YouTube
+                        </a>
+                        <br />
+                        <button
+                            onClick={() => setShowDemoModal(false)}
+                            style={{
+                                marginTop: '16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
+                                color: '#fff', padding: '8px 24px', borderRadius: '8px',
+                                cursor: 'pointer', fontSize: '0.9rem', opacity: 0.7,
+                            }}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );
